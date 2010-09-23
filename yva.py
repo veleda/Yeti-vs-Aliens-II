@@ -15,7 +15,8 @@ class Player:
     vx = 0
     vy = 0
     w = 30
-    h = 80
+    h = 43
+    image = pygame.image.load("yeti.png")
 
 draw_tile = lambda color, x, y: pygame.draw.rect(screen, color,
         (x * tile_width, y * tile_height, tile_width, tile_height))
@@ -85,21 +86,21 @@ while True:
                     player.y = tile_height * y - player.h - g
                     player.vy = 0
 
-            draw_tile(hgcolor, x, y)
+            #draw_tile(hgcolor, x, y)
 
         # Move the player.
         player.vy += g
         player.x += player.vx
         player.y += player.vy
 
-        # Draw the tiles of the level. Just rectangles for now.
+        # Draw the tiles of the level.
         for y in range(len(level)):
             for x in range(len(level[y])):
                 if level[y][x] == "x":
                     screen.blit(tile, (x * tile_width, y * tile_height))
 
-        # Draw player. Just a rectangle for now.
-        pygame.draw.rect(screen, fgcolor, (player.x, player.y, player.w, player.h))
+        # Draw player.
+        screen.blit(player.image, (player.x, player.y, player.w, player.h))
 
         # Swap front and back buffers.
         pygame.display.update()
