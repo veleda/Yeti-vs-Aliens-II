@@ -77,16 +77,16 @@ while True:
         y = (player.y + player.h) // tile_height
 
         # Check if the tiles covered by the player are filled in.
-        for x in range(player.x // tile_width, (player.x + player.w) // tile_height + 1):
-            if level[y][x] == "x":
-                player.can_jump = True
+        if player.vy > 0:
+            for x in range(player.x // tile_width, (player.x + player.w) // tile_height + 1):
+                if level[y][x] == "x":
+                    player.can_jump = True
 
-                # If falling, stop the player from falling through.
-                if player.vy > 0:
+                    # If falling, stop the player from falling through.
                     player.y = tile_height * y - player.h - g
                     player.vy = 0
 
-            #draw_tile(hgcolor, x, y)
+                #draw_tile(hgcolor, x, y)
 
         # Move the player.
         player.vy += g
