@@ -6,7 +6,7 @@ import sys
 import pygame
 
 class Player:
-    agility = 20
+    agility = 13
     can_jump = True
     speed = 5
     score = 0
