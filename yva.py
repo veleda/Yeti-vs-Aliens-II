@@ -68,12 +68,18 @@ while True:
         # Draw objects to back buffer.
         screen.blit(heaven, (0, 0))
 
+        # Check if the player is falling onto a platform.
+        # x and y are measured in tiles.
+
+        # Find the height of the tiles under the player's feet.
         y = (player.y + player.h) // tile_height
+
+        # Check if the tiles covered by the player are filled in.
         for x in range(player.x // tile_width, (player.x + player.w) // tile_height + 1):
             if level[y][x] == "x":
                 player.can_jump = True
 
-                # If falling...
+                # If falling, stop the player from falling through.
                 if player.vy > 0:
                     player.y = tile_height * y - player.h - g
                     player.vy = 0
@@ -85,11 +91,13 @@ while True:
         player.x += player.vx
         player.y += player.vy
 
+        # Draw the tiles of the level. Just rectangles for now.
         for y in range(len(level)):
             for x in range(len(level[y])):
                 if level[y][x] == "x":
                     draw_tile(mgcolor, x, y)
 
+        # Draw player. Just a rectangle for now.
         pygame.draw.rect(screen, fgcolor, (player.x, player.y, player.w, player.h))
 
         # Swap front and back buffers.
