@@ -23,6 +23,7 @@ draw_tile = lambda color, x, y: pygame.draw.rect(screen, color,
 # Gravity.
 g = 1
 
+tile = pygame.image.load("tile.png")
 tile_width = 32
 tile_height = 32
 
@@ -95,7 +96,7 @@ while True:
         for y in range(len(level)):
             for x in range(len(level[y])):
                 if level[y][x] == "x":
-                    draw_tile(mgcolor, x, y)
+                    screen.blit(tile, (x * tile_width, y * tile_height))
 
         # Draw player. Just a rectangle for now.
         pygame.draw.rect(screen, fgcolor, (player.x, player.y, player.w, player.h))
