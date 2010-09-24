@@ -24,10 +24,12 @@ draw_tile = lambda color, x, y: pygame.draw.rect(screen, color,
 # Gravity.
 g = 1
 
+# Tiles.
 tile = pygame.image.load("tile.png")
 tile_width = 32
 tile_height = 32
 
+# Level.
 levelfilename = "levelt"
 level = map(list, open(levelfilename).read().split("\n")[:-1])
 
@@ -41,6 +43,7 @@ mgcolor = 255, 127, 0
 size = screen_width, screen_height = 640, 480
 screen = pygame.display.set_mode(size)
 
+# Background.
 heaven = pygame.image.load("heaven.png")
 
 # Game objects.
