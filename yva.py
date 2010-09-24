@@ -33,6 +33,10 @@ editing = "-e" in sys.argv
 # Gravity.
 g = .8
 
+# Screen size.
+screen_width = 640
+screen_height = 480
+
 # Tiles.
 tile_width = 32
 tile_height = 32
@@ -46,15 +50,16 @@ current_tile = 0
 
 # Level.
 level_filename = sys.argv[-1]
+
 if os.path.isfile(level_filename):
     level = eval(open(level_filename).read())
 else:
     level = []
 
     for i in range(14):
-        level.append([0 for i in range(20)])
+        level.append([0 for i in range(3 * screen_width // tile_width)])
 
-    level.append([1 for i in range(20)])
+    level.append([1 for i in range(3 * screen_width // tile_width)])
 
 level_width = len(level[0]) * tile_width
 
@@ -65,9 +70,6 @@ hgcolor = 255, 0, 0
 mgcolor = 255, 127, 0
 
 # Screen surface and size.
-screen_width = 640
-screen_height = 480
-
 editor_width = 100
 
 if editing:
@@ -234,6 +236,17 @@ while True:
         elif event.key == 27:
             break
 
+        if editing:
+            if event.key in (pygame.K_PLUS, pygame.K_KP_PLUS):
+                for row in level:
+                    row.append(0)
+                    level_width = len(level[0]) * tile_width
+
+            elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+                for row in level:
+                    row.pop()
+                    level_width = len(level[0]) * tile_width
+
     # If a key is released...
     elif event.type == pygame.KEYUP:
         if event.key == pygame.K_LEFT:
@@ -249,7 +262,7 @@ while True:
     # If a mouse button is clicked...
     elif editing and event.type == pygame.MOUSEBUTTONDOWN:
         if event.pos[0] > editor_width:
-            x = (event.pos[0] - editor_width) // tile_width
+            x = (event.pos[0] - editor_width + camera.x) // tile_width
             y = event.pos[1] // tile_height
             level[y][x] = current_tile
 
@@ -266,7 +279,14 @@ while True:
                 else:
                     x += tile_width
 
+    # If a mouse button is held down...
+    elif editing and event.type == pygame.MOUSEMOTION:
+        if event.buttons[0] and event.pos[0] > editor_width:
+            x = (event.pos[0] - editor_width + camera.x) // tile_width
+            y = event.pos[1] // tile_height
+            level[y][x] = current_tile
+
 if editing:
-    f = open("levele", "w")
+    f = open(level_filename, "w")
     f.write(repr(level))
     f.close()
