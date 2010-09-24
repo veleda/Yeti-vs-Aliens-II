@@ -27,7 +27,7 @@ draw_tile = lambda color, x, y: pygame.draw.rect(screen, color,
         (x * tile_width, y * tile_height, tile_width, tile_height))
 
 # Gravity.
-g = 1
+g = .8
 
 # Tiles.
 tile = pygame.image.load("tile.png")
@@ -86,7 +86,7 @@ while True:
         # Check if the tiles covered by the player are filled in.
         if player.vy > 0:
             # Find the height of the tiles under the player's feet.
-            y = (player.y + player.h) // tile_height
+            y = int((player.y + player.h + player.vy) // tile_height)
 
             for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
                 if y in range(len(level)) and level[y][x] == "x":
@@ -99,12 +99,10 @@ while True:
                 #draw_tile(fgcolor, x, y)
         elif player.vy < 0:
             # Find the height of the tiles over the player's head.
-            y = player.y // tile_height
+            y = int(player.y // tile_height)
 
             for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
                 if y in range(len(level)) and level[y][x] == "x":
-                    player.can_jump = True
-
                     # If falling, stop the player from falling through.
                     player.y = y * tile_height + player.h - g
                     player.vy = 0
@@ -115,7 +113,7 @@ while True:
         if player.vx > 0:
             x = (player.x + player.w) // tile_width
 
-            for y in range(player.y // tile_height, (player.y + player.h) // tile_height + 1):
+            for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
                 if y in range(len(level)) and level[y][x] == "x":
                     player.x -= player.vx
                     break
@@ -125,7 +123,7 @@ while True:
         elif player.vx < 0:
             x = (player.x + player.w - 1) // tile_width - 1
 
-            for y in range(player.y // tile_height, (player.y + player.h) // tile_height + 1):
+            for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
                 if y in range(len(level)) and level[y][x] == "x":
                     player.x -= player.vx
                     break
@@ -199,4 +197,5 @@ while True:
             player.vx -= player.speed
 
         elif event.key == pygame.K_UP:
-            player.vy += player.agility
+            if player.vy < 0:
+                player.vy += player.agility
