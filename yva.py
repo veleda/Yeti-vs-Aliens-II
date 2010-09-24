@@ -19,7 +19,9 @@ class Player:
     vy = 0
     w = 32
     h = 43
-    image = pygame.image.load("yeti.png")
+    rimage = pygame.image.load("yeti.png")
+    limage = pygame.transform.flip(rimage, True, False)
+    image = rimage
 
 draw_tile = lambda color, x, y: pygame.draw.rect(screen, color,
         (x * tile_width, y * tile_height, tile_width, tile_height))
@@ -172,9 +174,11 @@ while True:
     elif event.type == pygame.KEYDOWN:
         if event.key == pygame.K_LEFT:
             player.vx -= player.speed
+            player.image = player.limage
 
         elif event.key == pygame.K_RIGHT:
             player.vx += player.speed
+            player.image = player.rimage
 
         elif event.key == pygame.K_UP:
             if player.can_jump:
