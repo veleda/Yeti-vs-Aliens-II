@@ -51,9 +51,15 @@ current_tile = 0
 # Level.
 level_filename = sys.argv[-1]
 
-if os.path.isfile(level_filename):
+if len(sys.argv) > 1 and os.path.isfile(level_filename):
     layernames, tilemap = level = eval(open(level_filename).read())
 else:
+    if not editing:
+        if len(sys.argv) == 2:
+            print "Level \"%s\" does not exist. Try creating a level using the editor option (-e)." % level_filename
+        print "Usage: %s [-e] level" % sys.argv[0]
+        sys.exit(1)
+
     layernames = [None, None,
             "mountains_1.png", None,
             "mountains_2.png", None,
