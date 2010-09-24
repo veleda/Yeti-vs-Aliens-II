@@ -20,7 +20,7 @@ class Player:
     vy = 0
     w = 32
     h = 43
-    rimage = pygame.image.load("yeti.png")
+    rimage = pygame.image.load("gfx/sprites/yeti.png")
     limage = pygame.transform.flip(rimage, True, False)
     image = rimage
 
@@ -40,11 +40,11 @@ screen_height = 480
 # Tiles.
 tile_width = 32
 tile_height = 32
-tilemap = pygame.image.load("tiles.png")
+tile_image = pygame.image.load("gfx/tiles.png")
 
 tiles = []
-for y in range(tilemap.get_rect()[3] // tile_height):
-    tiles.append(tilemap.subsurface(0, y * tile_height, tile_width, tile_height))
+for y in range(tile_image.get_rect()[3] // tile_height):
+    tiles.append(tile_image.subsurface(0, y * tile_height, tile_width, tile_height))
 
 current_tile = 0
 
@@ -52,16 +52,30 @@ current_tile = 0
 level_filename = sys.argv[-1]
 
 if os.path.isfile(level_filename):
-    level = eval(open(level_filename).read())
+    layernames, tilemap = level = eval(open(level_filename).read())
 else:
-    level = []
+    layernames = [None, None,
+            "mountains_1.png", None,
+            "mountains_2.png", None,
+            "mountains_3.png", None,
+            None, None, "heaven.png"]
 
+    tilemap = []
     for i in range(14):
-        level.append([0 for i in range(3 * screen_width // tile_width)])
+        tilemap.append([0 for i in range(3 * screen_width // tile_width)])
+    tilemap.append([1 for i in range(3 * screen_width // tile_width)])
 
-    level.append([1 for i in range(3 * screen_width // tile_width)])
+    level = layernames, tilemap
 
-level_width = len(level[0]) * tile_width
+level_width = len(tilemap[0]) * tile_width
+
+# Layers.
+layers = []
+for layername in layernames:
+    if layername:
+        layers.append(pygame.image.load("gfx/layers/%s" % layername))
+    else:
+        layers.append(None)
 
 # Colors.
 bgcolor = 0, 127, 0
@@ -70,7 +84,7 @@ hgcolor = 255, 0, 0
 mgcolor = 255, 127, 0
 
 # Screen surface and size.
-editor_width = 100
+editor_width = 4 * tile_width
 
 if editing:
     window_width = screen_width + editor_width
@@ -85,12 +99,6 @@ if editing:
     screen = window.subsurface((editor_width, 0, screen_width, screen_height))
 else:
     screen = window.subsurface((0, 0, screen_width, screen_height))
-
-# Background.
-heaven = pygame.image.load("heaven.png")
-
-# Middleground.
-mountains = pygame.image.load("mountains.png")
 
 # Game objects.
 camera = Camera()
@@ -126,7 +134,7 @@ while True:
             y = int((player.y + player.h + player.vy) // tile_height)
 
             for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
-                if y in range(len(level)) and level[y][x]:
+                if y in range(len(tilemap)) and tilemap[y][x]:
                     player.can_jump = True
 
                     # If falling, stop the player from falling through.
@@ -139,7 +147,7 @@ while True:
             y = int(player.y // tile_height)
 
             for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
-                if y in range(len(level)) and level[y][x]:
+                if y in range(len(tilemap)) and tilemap[y][x]:
                     # If falling, stop the player from falling through.
                     player.y = y * tile_height + player.h - g
                     player.vy = 0
@@ -151,7 +159,7 @@ while True:
             x = (player.x + player.w) // tile_width
 
             for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
-                if y in range(len(level)) and level[y][x]:
+                if y in range(len(tilemap)) and tilemap[y][x]:
                     player.x -= player.vx
                     break
 
@@ -161,7 +169,7 @@ while True:
             x = (player.x + player.w - 1) // tile_width - 1
 
             for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
-                if y in range(len(level)) and level[y][x]:
+                if y in range(len(tilemap)) and tilemap[y][x]:
                     player.x -= player.vx
                     break
 
@@ -186,17 +194,16 @@ while True:
         else:
             camera.x = player.x - screen_width // 2
 
-        # Draw background.
-        screen.blit(heaven, (0 - camera.x // 32, 0))
-
-        # Draw middleground.
-        screen.blit(mountains, (0 - camera.x // 8, 0))
+        # Draw layers.
+        for i in range(len(layers) - 1, -1, -1):
+            if layers[i]:
+                screen.blit(layers[i], (0 - camera.x // 2 ** i, 0))
 
         # Draw the tiles of the level.
-        for y in range(len(level)):
-            for x in range(len(level[y])):
-                if level[y][x]:
-                    screen.blit(tiles[level[y][x]], (x * tile_width - camera.x, y * tile_height))
+        for y in range(len(tilemap)):
+            for x in range(len(tilemap[y])):
+                if tilemap[y][x]:
+                    screen.blit(tiles[tilemap[y][x]], (x * tile_width - camera.x, y * tile_height))
 
         # Draw player.
         #pygame.draw.rect(screen, mgcolor, (player.x, player.y, player.w, player.h))
@@ -207,7 +214,7 @@ while True:
             x, y = 0, 0
             for tile in tiles:
                 window.blit(tile, (x, y))
-                if x + tile_width > editor_width:
+                if x + 2 * tile_width > editor_width:
                     x = 0
                     y += tile_height
                 else:
@@ -238,14 +245,14 @@ while True:
 
         if editing:
             if event.key in (pygame.K_PLUS, pygame.K_KP_PLUS):
-                for row in level:
+                for row in tilemap:
                     row.append(0)
-                    level_width = len(level[0]) * tile_width
+                    level_width = len(tilemap[0]) * tile_width
 
             elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
-                for row in level:
+                for row in tilemap:
                     row.pop()
-                    level_width = len(level[0]) * tile_width
+                    level_width = len(tilemap[0]) * tile_width
 
     # If a key is released...
     elif event.type == pygame.KEYUP:
@@ -264,7 +271,7 @@ while True:
         if event.pos[0] > editor_width:
             x = (event.pos[0] - editor_width + camera.x) // tile_width
             y = event.pos[1] // tile_height
-            level[y][x] = current_tile
+            tilemap[y][x] = current_tile
 
         else:
             x, y = 0, 0
@@ -273,7 +280,7 @@ while True:
                     current_tile = i
                     break
 
-                if x + tile_width > editor_width:
+                if x + 2 * tile_width > editor_width:
                     x = 0
                     y += tile_height
                 else:
@@ -284,7 +291,7 @@ while True:
         if event.buttons[0] and event.pos[0] > editor_width:
             x = (event.pos[0] - editor_width + camera.x) // tile_width
             y = event.pos[1] // tile_height
-            level[y][x] = current_tile
+            tilemap[y][x] = current_tile
 
 if editing:
     f = open(level_filename, "w")
