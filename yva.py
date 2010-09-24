@@ -5,6 +5,9 @@ import sys
 
 import pygame
 
+class Camera:
+    x = 0
+
 class Player:
     agility = 13
     can_jump = True
@@ -30,8 +33,9 @@ tile_width = 32
 tile_height = 32
 
 # Level.
-levelfilename = "levelt"
-level = map(list, open(levelfilename).read().split("\n")[:-1])
+level_filename = "levelp"
+level = map(list, open(level_filename).read().split("\n")[:-1])
+level_width = len(level[0]) * tile_width
 
 # Colors.
 bgcolor = 0, 127, 0
@@ -46,7 +50,11 @@ screen = pygame.display.set_mode(size)
 # Background.
 heaven = pygame.image.load("heaven.png")
 
+# Middleground.
+mountains = pygame.image.load("mountains.png")
+
 # Game objects.
+camera = Camera()
 player = Player()
 
 # Short buffer for low latency.
@@ -70,15 +78,6 @@ while True:
 
     # If we should update the screen...
     if event.type == pygame.VIDEOEXPOSE:
-        # Draw background.
-        screen.blit(heaven, (0, 0))
-
-        # Draw the tiles of the level.
-        for y in range(len(level)):
-            for x in range(len(level[y])):
-                if level[y][x] == "x":
-                    screen.blit(tile, (x * tile_width, y * tile_height))
-
         # Check if the player is falling onto a platform.
         # x and y are measured in tiles.
 
@@ -136,9 +135,29 @@ while True:
         player.x += player.vx
         player.y += player.vy
 
+        # Position camera.
+        if player.x < screen_width // 2:
+            camera.x = 0
+        elif player.x > level_width - screen_width // 2:
+            camera.x = level_width - screen_width
+        else:
+            camera.x = player.x - screen_width // 2
+
+        # Draw background.
+        screen.blit(heaven, (0 - camera.x // 32, 0))
+
+        # Draw middleground.
+        screen.blit(mountains, (0 - camera.x // 8, 0))
+
+        # Draw the tiles of the level.
+        for y in range(len(level)):
+            for x in range(len(level[y])):
+                if level[y][x] == "x":
+                    screen.blit(tile, (x * tile_width - camera.x, y * tile_height))
+
         # Draw player.
         #pygame.draw.rect(screen, mgcolor, (player.x, player.y, player.w, player.h))
-        screen.blit(player.image, (player.x, player.y, player.w, player.h))
+        screen.blit(player.image, (player.x - camera.x, player.y, player.w, player.h))
 
         # Swap front and back buffers.
         pygame.display.update()
