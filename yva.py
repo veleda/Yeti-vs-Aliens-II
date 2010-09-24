@@ -9,12 +9,12 @@ class Camera:
     x = 0
 
 class Player:
-    agility = 13
+    agility = 12
     can_jump = True
     speed = 4
     score = 0
-    x = 240
-    y = 300
+    x = 40
+    y = 400
     vx = 0
     vy = 0
     w = 32
@@ -87,7 +87,7 @@ while True:
             y = (player.y + player.h) // tile_height
 
             for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
-                if level[y][x] == "x":
+                if y in range(len(level)) and level[y][x] == "x":
                     player.can_jump = True
 
                     # If falling, stop the player from falling through.
@@ -100,7 +100,7 @@ while True:
             y = player.y // tile_height
 
             for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
-                if level[y][x] == "x":
+                if y in range(len(level)) and level[y][x] == "x":
                     player.can_jump = True
 
                     # If falling, stop the player from falling through.
@@ -114,7 +114,7 @@ while True:
             x = (player.x + player.w) // tile_width
 
             for y in range(player.y // tile_height, (player.y + player.h) // tile_height + 1):
-                if level[y][x] == "x":
+                if y in range(len(level)) and level[y][x] == "x":
                     player.x -= player.vx
                     break
 
@@ -124,16 +124,22 @@ while True:
             x = (player.x + player.w - 1) // tile_width - 1
 
             for y in range(player.y // tile_height, (player.y + player.h) // tile_height + 1):
-                if level[y][x] == "x":
+                if y in range(len(level)) and level[y][x] == "x":
                     player.x -= player.vx
                     break
 
                 #draw_tile(hgcolor, x, y)
 
         # Move the player.
-        player.vy += g
+        if player.vx < tile_height // 2:
+            player.vy += g
+
         player.x += player.vx
         player.y += player.vy
+
+        # Stop game if player falls out of the screen.
+        if player.y > screen_height:
+            break
 
         # Position camera.
         if player.x < screen_width // 2:
