@@ -93,6 +93,19 @@ while True:
                     player.vy = 0
 
                 #draw_tile(fgcolor, x, y)
+        elif player.vy < 0:
+            # Find the height of the tiles over the player's head.
+            y = player.y // tile_height
+
+            for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
+                if level[y][x] == "x":
+                    player.can_jump = True
+
+                    # If falling, stop the player from falling through.
+                    player.y = y * tile_height + player.h - g
+                    player.vy = 0
+
+                #draw_tile(fgcolor, x, y)
 
         # Stop player if trying to walk into a wall.
         if player.vx > 0:
