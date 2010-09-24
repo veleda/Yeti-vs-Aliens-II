@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # vi: set et:ts=4:sw=4
 
+import os
 import sys
 
 import pygame
@@ -26,17 +27,35 @@ class Player:
 draw_tile = lambda color, x, y: pygame.draw.rect(screen, color,
         (x * tile_width, y * tile_height, tile_width, tile_height))
 
+# Check for editing mode.
+editing = "-e" in sys.argv
+
 # Gravity.
 g = .8
 
 # Tiles.
-tile = pygame.image.load("tile.png")
 tile_width = 32
 tile_height = 32
+tilemap = pygame.image.load("tiles.png")
+
+tiles = []
+for y in range(tilemap.get_rect()[3] // tile_height):
+    tiles.append(tilemap.subsurface(0, y * tile_height, tile_width, tile_height))
+
+current_tile = 0
 
 # Level.
-level_filename = "levelp"
-level = map(list, open(level_filename).read().split("\n")[:-1])
+level_filename = sys.argv[-1]
+if os.path.isfile(level_filename):
+    level = eval(open(level_filename).read())
+else:
+    level = []
+
+    for i in range(14):
+        level.append([0 for i in range(20)])
+
+    level.append([1 for i in range(20)])
+
 level_width = len(level[0]) * tile_width
 
 # Colors.
@@ -46,8 +65,24 @@ hgcolor = 255, 0, 0
 mgcolor = 255, 127, 0
 
 # Screen surface and size.
-size = screen_width, screen_height = 640, 480
-screen = pygame.display.set_mode(size)
+screen_width = 640
+screen_height = 480
+
+editor_width = 100
+
+if editing:
+    window_width = screen_width + editor_width
+else:
+    window_width = screen_width
+
+window_height = screen_height
+
+window = pygame.display.set_mode((window_width, window_height))
+
+if editing:
+    screen = window.subsurface((editor_width, 0, screen_width, screen_height))
+else:
+    screen = window.subsurface((0, 0, screen_width, screen_height))
 
 # Background.
 heaven = pygame.image.load("heaven.png")
@@ -89,7 +124,7 @@ while True:
             y = int((player.y + player.h + player.vy) // tile_height)
 
             for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
-                if y in range(len(level)) and level[y][x] == "x":
+                if y in range(len(level)) and level[y][x]:
                     player.can_jump = True
 
                     # If falling, stop the player from falling through.
@@ -102,7 +137,7 @@ while True:
             y = int(player.y // tile_height)
 
             for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
-                if y in range(len(level)) and level[y][x] == "x":
+                if y in range(len(level)) and level[y][x]:
                     # If falling, stop the player from falling through.
                     player.y = y * tile_height + player.h - g
                     player.vy = 0
@@ -114,7 +149,7 @@ while True:
             x = (player.x + player.w) // tile_width
 
             for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
-                if y in range(len(level)) and level[y][x] == "x":
+                if y in range(len(level)) and level[y][x]:
                     player.x -= player.vx
                     break
 
@@ -124,7 +159,7 @@ while True:
             x = (player.x + player.w - 1) // tile_width - 1
 
             for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
-                if y in range(len(level)) and level[y][x] == "x":
+                if y in range(len(level)) and level[y][x]:
                     player.x -= player.vx
                     break
 
@@ -158,12 +193,23 @@ while True:
         # Draw the tiles of the level.
         for y in range(len(level)):
             for x in range(len(level[y])):
-                if level[y][x] == "x":
-                    screen.blit(tile, (x * tile_width - camera.x, y * tile_height))
+                if level[y][x]:
+                    screen.blit(tiles[level[y][x]], (x * tile_width - camera.x, y * tile_height))
 
         # Draw player.
         #pygame.draw.rect(screen, mgcolor, (player.x, player.y, player.w, player.h))
         screen.blit(player.image, (player.x - camera.x, player.y, player.w, player.h))
+
+        # Draw editor widgets.
+        if editing:
+            x, y = 0, 0
+            for tile in tiles:
+                window.blit(tile, (x, y))
+                if x + tile_width > editor_width:
+                    x = 0
+                    y += tile_height
+                else:
+                    x += tile_width
 
         # Swap front and back buffers.
         pygame.display.update()
@@ -199,3 +245,28 @@ while True:
         elif event.key == pygame.K_UP:
             if player.vy < 0:
                 player.vy += player.agility
+
+    # If a mouse button is clicked...
+    elif editing and event.type == pygame.MOUSEBUTTONDOWN:
+        if event.pos[0] > editor_width:
+            x = (event.pos[0] - editor_width) // tile_width
+            y = event.pos[1] // tile_height
+            level[y][x] = current_tile
+
+        else:
+            x, y = 0, 0
+            for i in range(len(tiles)):
+                if event.pos[0] in range(x, x + tile_width) and event.pos[1] in range(y, y + tile_height):
+                    current_tile = i
+                    break
+
+                if x + tile_width > editor_width:
+                    x = 0
+                    y += tile_height
+                else:
+                    x += tile_width
+
+if editing:
+    f = open("levele", "w")
+    f.write(repr(level))
+    f.close()
