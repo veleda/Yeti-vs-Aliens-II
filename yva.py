@@ -8,13 +8,13 @@ import pygame
 class Player:
     agility = 13
     can_jump = True
-    speed = 5
+    speed = 4
     score = 0
     x = 240
-    y = 340
+    y = 300
     vx = 0
     vy = 0
-    w = 30
+    w = 32
     h = 43
     image = pygame.image.load("yeti.png")
 
@@ -67,24 +67,51 @@ while True:
 
     # If we should update the screen...
     if event.type == pygame.VIDEOEXPOSE:
-        # Draw objects to back buffer.
+        # Draw background.
         screen.blit(heaven, (0, 0))
+
+        # Draw the tiles of the level.
+        for y in range(len(level)):
+            for x in range(len(level[y])):
+                if level[y][x] == "x":
+                    screen.blit(tile, (x * tile_width, y * tile_height))
 
         # Check if the player is falling onto a platform.
         # x and y are measured in tiles.
 
-        # Find the height of the tiles under the player's feet.
-        y = (player.y + player.h) // tile_height
-
         # Check if the tiles covered by the player are filled in.
         if player.vy > 0:
-            for x in range(player.x // tile_width, (player.x + player.w) // tile_height + 1):
+            # Find the height of the tiles under the player's feet.
+            y = (player.y + player.h) // tile_height
+
+            for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
                 if level[y][x] == "x":
                     player.can_jump = True
 
                     # If falling, stop the player from falling through.
                     player.y = tile_height * y - player.h - g
                     player.vy = 0
+
+                #draw_tile(fgcolor, x, y)
+
+        # Stop player if trying to walk into a wall.
+        if player.vx > 0:
+            x = (player.x + player.w) // tile_width
+
+            for y in range(player.y // tile_height, (player.y + player.h) // tile_height + 1):
+                if level[y][x] == "x":
+                    player.x -= player.vx
+                    break
+
+                #draw_tile(hgcolor, x, y)
+
+        elif player.vx < 0:
+            x = (player.x + player.w - 1) // tile_width - 1
+
+            for y in range(player.y // tile_height, (player.y + player.h) // tile_height + 1):
+                if level[y][x] == "x":
+                    player.x -= player.vx
+                    break
 
                 #draw_tile(hgcolor, x, y)
 
@@ -93,13 +120,8 @@ while True:
         player.x += player.vx
         player.y += player.vy
 
-        # Draw the tiles of the level.
-        for y in range(len(level)):
-            for x in range(len(level[y])):
-                if level[y][x] == "x":
-                    screen.blit(tile, (x * tile_width, y * tile_height))
-
         # Draw player.
+        #pygame.draw.rect(screen, mgcolor, (player.x, player.y, player.w, player.h))
         screen.blit(player.image, (player.x, player.y, player.w, player.h))
 
         # Swap front and back buffers.
