@@ -1,0 +1,23 @@
+How to use the level editor
+===========================
+
+Running the editor
+------------------
+
+Run "python yva.py -e <levelname>
+
+replacing <levelname> with the filename you want for your level. The level is
+saved automatically when you exit the editor by pressing the Escape key.
+
+Placing tiles
+-------------
+
+1. Click on a tile in the palette at the left of the screen.
+2. Click inside the game where you want your tile.
+3. Drag the mouse around for placing several tiles at once.
+
+Growing and shrinking the level
+-------------------------------
+
+Press + to grow the level.
+Press - to shrink the level.
