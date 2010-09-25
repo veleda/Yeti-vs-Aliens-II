@@ -7,8 +7,8 @@ import sys
 import pygame
 
 # Profiling.
-import cProfile
-import pstats
+#import cProfile
+#import pstats
 
 class Camera:
     x = 0
