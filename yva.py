@@ -302,7 +302,10 @@ def main():
             if event.pos[0] > editor_width:
                 x = (event.pos[0] - editor_width + camera.x) // tile_width
                 y = event.pos[1] // tile_height
-                tilemap[y][x] = current_tile
+                if event.button == 1:
+                    tilemap[y][x] = current_tile
+                elif event.button == 3:
+                    tilemap[y][x] = 0
 
             else:
                 x, y = 0, 0
@@ -319,10 +322,13 @@ def main():
 
         # If a mouse button is held down...
         elif editing and event.type == pygame.MOUSEMOTION:
-            if event.buttons[0] and event.pos[0] > editor_width:
+            if event.pos[0] > editor_width:
                 x = (event.pos[0] - editor_width + camera.x) // tile_width
                 y = event.pos[1] // tile_height
-                tilemap[y][x] = current_tile
+                if event.buttons[0]:
+                    tilemap[y][x] = current_tile
+                elif event.buttons[2]:
+                    tilemap[y][x] = 0
 
     if editing:
         f = open(level_filename, "w")
