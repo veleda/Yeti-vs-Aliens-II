@@ -6,6 +6,9 @@ import sys
 
 import pygame
 
+layers_dir = ["gfx", "layers"]
+tiles_path = os.path.join("gfx", "tiles.png")
+
 framerate = 60
 
 tile_width = 32
@@ -25,6 +28,10 @@ class Player:
     maxjumptime = 8
     speed = 4
 
+    life = 5
+    heart = pygame.image.load("gfx/sprites/heart.png")
+    heart.set_colorkey((255, 0, 255))
+
     x = 40
     y = 400
 
@@ -38,8 +45,20 @@ class Player:
     limage = pygame.transform.flip(rimage, True, False)
     image = rimage
 
-def load_tiles(filename):
-    tile_image = pygame.image.load(filename)
+def load_layers(layernames):
+    layers = []
+    for layername in layernames:
+        if layername:
+            filename = os.path.join(*(layers_dir + [layername]))
+            layers.append(pygame.image.load(filename))
+            layers[-1].set_colorkey((255, 0, 255))
+        else:
+            layers.append(None)
+
+    return layers
+
+def load_tiles(tiles_path):
+    tile_image = pygame.image.load(tiles_path)
 
     tiles = []
     for y in range(tile_image.get_rect()[3] // tile_height):
@@ -48,16 +67,11 @@ def load_tiles(filename):
     return tiles
 
 def play(level, window, tiles, editing=False):
+
     layernames, tilemap = level
     level_width = len(tilemap[0]) * tile_width
 
-    layers = []
-    for layername in layernames:
-        if layername:
-            layers.append(pygame.image.load("gfx/layers/%s" % layername))
-            layers[-1].set_colorkey((255, 0, 255))
-        else:
-            layers.append(None)
+    layers = load_layers(layernames)
 
     current_tile = 0
     g = .3
@@ -158,6 +172,9 @@ def play(level, window, tiles, editing=False):
                 player.image = player.rimage
 
             screen.blit(player.image, (player.x - camera.x, player.y, player.w, player.h))
+
+            for i in range(player.life):
+                screen.blit(player.heart, (12 * i, 0, 16, 16))
 
             # Draw editor widgets.
             if editing:
@@ -264,15 +281,15 @@ def main():
             sys.exit(1)
 
         layernames = [None, None,
-                "mountains_1.png", None,
-                "mountains_2.png", None,
-                "mountains_3.png", None,
+                "mountains_1.png", "clouds_1.png",
+                "mountains_2.png", "clouds_2.png",
+                "mountains_3.png", "clouds_3.png",
                 None, None, "heaven.png"]
 
         tilemap = []
         for i in range(14):
-            tilemap.append([0 for i in range(3 * screen_width // tile_width)])
-        tilemap.append([1 for i in range(3 * screen_width // tile_width)])
+            tilemap.append([0 for i in range(3 * window_width // tile_width)])
+        tilemap.append([1 for i in range(3 * window_width // tile_width)])
 
         level = layernames, tilemap
 
@@ -283,7 +300,8 @@ def main():
     pygame.time.set_timer(pygame.VIDEOEXPOSE, 1000 / framerate)
     window = pygame.display.set_mode((window_width, window_height))
 
-    play(level, window, load_tiles("gfx/tiles.png"), editing=editing)
+    tiles = load_tiles(tiles_path)
+    play(level, window, tiles, editing=editing)
 
     if editing:
         f = open(level_filename, "w")
