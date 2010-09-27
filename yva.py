@@ -6,24 +6,48 @@ import sys
 
 import pygame
 
-layers_dir = ["gfx", "layers"]
-tiles_path = os.path.join("gfx", "tiles.png")
-
-framerate = 60
-
-tile_width = 32
-tile_height = 32
-
-window_width = 640
-window_height = 480
-editor_width = 4 * tile_width
-
 class Camera:
     x = 0
 
+class Baddie:
+    dead = False
+    speed = 2
+
+    vy = 0
+
+    w = 32
+    h = 32
+
+    def __init__(self, kind, x, y, right):
+        self.kind, self.x, self.y, self.right = kind, x, y, right
+
+        self.rimage = kind.image
+        self.limage = pygame.transform.flip(kind.image, True, False)
+
+        if right:
+            self.vx = self.speed
+            self.image = self.rimage
+        else:
+            self.vx = -self.speed
+            self.image = self.limage
+
+    def __repr__(self):
+        return "Baddie(%s, %d, %d, %s)" % (self.kind, self.x, self.y, self.right)
+
+class Kind:
+    def __init__(self, speed, w, h, spritename):
+        self.speed, self.w, self.h, self.spritename = speed, w, h, spritename
+        imagepath = os.path.join("gfx", "sprites", spritename)
+        self.image = pygame.image.load(imagepath)
+        self.image.set_colorkey((255, 0, 255))
+
+    def __repr__(self):
+        return "Kind(%d, %d, %d, \"%s\")" % (self.speed, self.w, self.h, self.spritename)
+
 class Player:
-    agility = 7
+    agility = 10
     airborne = True
+    dead = False
     jumptime = -1
     maxjumptime = 8
     speed = 4
@@ -44,6 +68,23 @@ class Player:
     rimage = pygame.image.load("gfx/sprites/yeti.png")
     limage = pygame.transform.flip(rimage, True, False)
     image = rimage
+
+
+layers_dir = ["gfx", "layers"]
+tiles_path = os.path.join("gfx", "tiles.png")
+
+framerate = 60
+
+tile_width = 32
+tile_height = 32
+
+window_width = 640
+window_height = 480
+editor_width = 4 * tile_width
+
+kinds = [Kind(2, 32, 32, "skier.png"),
+         Kind(1, 32, 32, "blob.png")]
+
 
 def load_layers(layernames):
     layers = []
@@ -68,14 +109,15 @@ def load_tiles(tiles_path):
     return tiles
 
 def play(level, window, tiles, editing=False):
-
-    layernames, tilemap, spikytiles = level
+    layernames, tilemap, spikytiles, baddies = level
     level_width = len(tilemap[0]) * tile_width
 
     layers = load_layers(layernames)
 
+    current_baddie = None
+    current_kind = 0
     current_tiles = [1, 0]
-    g = .3
+    g = .6
 
     camera = Camera()
     player = Player()
@@ -92,66 +134,97 @@ def play(level, window, tiles, editing=False):
         event = pygame.event.wait()
 
         if event.type == pygame.VIDEOEXPOSE:
-            if player.vy > 0:
-                y = int((player.y + player.h + player.vy) // tile_height)
+            if not player.dead:
+                if player.vy > 0:
+                    y = int((player.y + player.h + player.vy) // tile_height)
 
-                for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
-                    if y in range(len(tilemap)) and tilemap[y][x]:
-                        if tilemap[y][x] in spikytiles:
-                            player.life -= 1
-                            player.y -= 1
-                            player.vy = -player.agility
-                            player.airborne = True
-
-                        else:
-                            if player.airborne and player.jumptime > 0:
+                    for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
+                        if y in range(len(tilemap)) and tilemap[y][x]:
+                            if tilemap[y][x] in spikytiles:
+                                player.life -= 1
                                 player.y -= 1
                                 player.vy = -player.agility
-                                player.airborne = True
+                                player. airborne = True
+
                             else:
-                                player.y = tile_height * y - player.h - g
-                                player.vy = 0
-                                player.airborne = False
+                                if player.airborne and player.jumptime > 0:
+                                    player.y -= 1
+                                    player.vy = -player.agility
+                                    player.airborne = True
+                                else:
+                                    player.y = tile_height * y - player.h - g
+                                    player.vy = 0
+                                    player.airborne = False
 
-                        break
+                            break
 
-            elif player.vy < 0:
-                y = int(player.y // tile_height)
-
-                for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
-                    if y in range(len(tilemap)) and tilemap[y][x]:
-                        if tilemap[y][x] in spikytiles:
-                            player.life -= 1
-
-                        player.y = y * tile_height + player.h - g
-                        player.vy = 0
-                        break
-
-            if player.vx > 0:
-                x = (player.x + player.w) // tile_width
-
-                for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
-                    if y in range(len(tilemap)) and tilemap[y][x]:
-                        if tilemap[y][x] in spikytiles:
-                            player.life -= 1
-                            player.x -= tile_height // 2
                         else:
-                            player.x -= player.vx
+                            if not editing:
+                                for baddie in baddies:
+                                    if baddie.y // tile_height == y and x in range(baddie.x // tile_width,
+                                            (baddie.x + baddie.w) // tile_width) and not baddie.dead:
+                                        baddie.dead = True
+                                        player.y -= 1
+                                        player.vy = -player.agility
+                                        player.airborne = True
+                                        break
 
-                        break
+                else:
+                    y = int(player.y // tile_height)
 
-            elif player.vx < 0:
-                x = (player.x + player.w - 1) // tile_width - 1
+                    for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
+                        if y in range(len(tilemap)) and tilemap[y][x]:
+                            if tilemap[y][x] in spikytiles:
+                                player.life -= 1
 
-                for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
-                    if y in range(len(tilemap)) and tilemap[y][x]:
-                        if tilemap[y][x] in spikytiles:
-                            player.life -= 1
-                            player.x += tile_height // 2
+                            player.y = y * tile_height + player.h - g
+                            player.vy = 0
+                            break
+
                         else:
-                            player.x -= player.vx
+                            if not editing:
+                                for baddie in baddies:
+                                    if baddie.y // tile_height == y and x in range(baddie.x // tile_width,
+                                            (baddie.x + baddie.w) // tile_width) and not baddie.dead:
+                                        player.life -= 1
+                                        baddie.dead = True
+                                        break
 
-                        break
+                if player.vx > 0:
+                    x = (player.x + player.w) // tile_width
+
+                    for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
+                        if y in range(len(tilemap)) and tilemap[y][x]:
+                            if tilemap[y][x] in spikytiles:
+                                player.life -= 1
+                                player.x -= tile_height // 2
+                            else:
+                                player.x -= player.vx
+
+                            break
+
+                elif player.vx < 0:
+                    x = (player.x + player.w - 1) // tile_width - 1
+
+                    for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
+                        if y in range(len(tilemap)) and tilemap[y][x]:
+                            if tilemap[y][x] in spikytiles:
+                                player.life -= 1
+                                player.x += tile_height // 2
+                            else:
+                                player.x -= player.vx
+
+                            break
+
+                if not editing:
+                    for x in (player.x + player.w - 1) // tile_width - 1, (player.x + player.w) // tile_width:
+                        for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
+                            for baddie in baddies:
+                                if baddie.y // tile_height == y and x in range(baddie.x // tile_width,
+                                        (baddie.x + baddie.w) // tile_width) and not baddie.dead:
+                                    player.life -= 1
+                                    baddie.dead = True
+                                    break
 
             # Move the player.
             if player.jumptime > -1:
@@ -163,8 +236,47 @@ def play(level, window, tiles, editing=False):
             player.x += player.vx
             player.y += player.vy
 
-            if player.y > screen_height or player.life < 1:
+            if player.life < 1:
+                player.dead = True
+
+            if player.y > screen_height:
                 break
+
+            if not editing:
+                for baddie in baddies:
+                    if not baddie.dead:
+                        if baddie.vy > 0:
+                            y = int((baddie.y + baddie.h + baddie.vy) // tile_height)
+
+                            for x in range(baddie.x // tile_width, (baddie.x + baddie.w - 1) // tile_width + 1):
+                                if y in range(len(tilemap)) and tilemap[y][x]:
+                                    baddie.y = tile_height * y - baddie.h - g
+                                    baddie.vy = 0
+                                    break
+
+                        if baddie.vx > 0:
+                            x = (baddie.x + baddie.w) // tile_width
+
+                            for y in range(int(baddie.y // tile_height), int((baddie.y + baddie.h) // tile_height + 1)):
+                                if y in range(len(tilemap)) and tilemap[y][x]:
+                                    baddie.vx = -baddie.speed
+                                    baddie.image = baddie.limage
+                                    break
+
+                        elif baddie.vx < 0:
+                            x = (baddie.x + baddie.w - 1) // tile_width - 1
+
+                            for y in range(int(baddie.y // tile_height), int((baddie.y + baddie.h) // tile_height + 1)):
+                                if y in range(len(tilemap)) and tilemap[y][x]:
+                                    baddie.vx = baddie.speed
+                                    baddie.image = baddie.rimage
+                                    break
+
+                    if baddie.vx < tile_height // 2:
+                        baddie.vy += g
+
+                    baddie.x += baddie.vx
+                    baddie.y += baddie.vy
 
             # Position camera.
             if player.x < screen_width // 2:
@@ -186,8 +298,9 @@ def play(level, window, tiles, editing=False):
                     if tilemap[y][x]:
                         screen.blit(tiles[tilemap[y][x]], (x * tile_width - camera.x, y * tile_height))
 
-            # Draw player.
-            #pygame.draw.rect(screen, mgcolor, (player.x, player.y, player.w, player.h))
+            for baddie in baddies:
+                screen.blit(baddie.image, (baddie.x - camera.x, baddie.y, baddie.w, baddie.h))
+
             if player.vx < 0:
                 player.image = player.limage
             elif player.vx > 0:
@@ -204,16 +317,26 @@ def play(level, window, tiles, editing=False):
                 window.blit(tiles[current_tiles[0]], ((editor_width - tile_width) // 4, tile_height / 2))
                 window.blit(tiles[current_tiles[1]], ((editor_width - tile_width) // 4 * 3, tile_height / 2))
 
-                x, y = 0, 2 * tile_height
+                x, y = -tile_width, 2 * tile_height
                 for tile in tiles:
-                    window.blit(tile, (x, y))
                     if x + 2 * tile_width > editor_width:
                         x = 0
                         y += tile_height
                     else:
                         x += tile_width
 
-            # Swap front and back buffers.
+                    window.blit(tile, (x, y))
+                
+                x = (editor_width - kinds[current_kind].w) // 2
+                y += 2 * tile_height
+                window.blit(kinds[current_kind].image, (x, y))
+
+                x = 0
+                y += 2 * tile_height
+                for kind in kinds:
+                    window.blit(kind.image, (x, y))
+                    x += 2 * tile_height
+
             pygame.display.update()
 
         elif event.type == pygame.KEYDOWN:
@@ -231,6 +354,12 @@ def play(level, window, tiles, editing=False):
                     player.y -= 1
                     player.vy = -player.agility
                     player.airborne = True
+
+            elif event.key == pygame.K_F2 and editing:
+                x, y = pygame.mouse.get_pos()
+
+                if x > editor_width:
+                    baddies.append(Baddie(kinds[current_kind], (x + camera.x - editor_width) // tile_width * tile_width, y // tile_height * tile_height, True))
 
             elif event.key == 27:
                 break
@@ -262,10 +391,35 @@ def play(level, window, tiles, editing=False):
             if event.pos[0] > editor_width:
                 x = (event.pos[0] - editor_width + camera.x) // tile_width
                 y = event.pos[1] // tile_height
+
                 if event.button == 1:
-                    tilemap[y][x] = current_tiles[0]
+                    for baddie in baddies:
+                        if x == baddie.x // tile_width and y == baddie.y // tile_height:
+                            current_baddie = baddie
+                            break
+
+                    else:
+                        tilemap[y][x] = current_tiles[0]
+
+                elif event.button == 2:
+                    for baddie in baddies:
+                        if x == baddie.x // tile_width and y == baddie.y // tile_height:
+                            if baddie.vx > 0:
+                                baddie.vx = -baddie.speed
+                                baddie.image = baddie.limage
+                            else:
+                                baddie.vx = +baddie.speed
+                                baddie.image = baddie.rimage
+
                 elif event.button == 3:
-                    tilemap[y][x] = current_tiles[1]
+                    for baddie in baddies:
+                        if x == baddie.x // tile_width and y == baddie.y // tile_height:
+                            current_baddie = baddie
+                            baddies.remove(baddie)
+                            break
+
+                    else:
+                        tilemap[y][x] = current_tiles[1]
 
             else:
                 x, y = 0, 2 * tile_height
@@ -275,6 +429,7 @@ def play(level, window, tiles, editing=False):
                             current_tiles[0] = i
                         elif event.button == 3:
                             current_tiles[1] = i
+
                         break
 
                     if x + 2 * tile_width > editor_width:
@@ -283,12 +438,28 @@ def play(level, window, tiles, editing=False):
                     else:
                         x += tile_width
 
+                x = 0
+                y += 4 * tile_height
+                for i in range(len(kinds)):
+                    if event.pos[0] in range(x, x + tile_width) and event.pos[1] in range(y, y + tile_height):
+                        current_kind = i
+
+                    x += 2 * tile_height
+
+        elif editing and event.type == pygame.MOUSEBUTTONUP:
+            current_baddie = None
+
         elif editing and event.type == pygame.MOUSEMOTION:
             if event.pos[0] > editor_width:
                 x = (event.pos[0] - editor_width + camera.x) // tile_width
                 y = event.pos[1] // tile_height
                 if event.buttons[0]:
-                    tilemap[y][x] = current_tiles[0]
+                    if current_baddie:
+                        current_baddie.x = x * tile_width
+                        current_baddie.y = y * tile_height
+                    else:
+                        tilemap[y][x] = current_tiles[0]
+
                 elif event.buttons[2]:
                     tilemap[y][x] = current_tiles[1]
 
