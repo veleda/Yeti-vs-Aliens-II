@@ -6,10 +6,10 @@ Open a terminal and run the following commands:
 cd wherever/this/file/is
 ./yva.py -e mybrandnewlevel.level
 
-You should now have a window with a tile pallette on the left, and a
+You should now have a window with a tile palette on the left, and a
 map on the right.
 
-Click on one of the tiles in the pallette (any but the first one). Now
+Click on one of the tiles in the palette (any but the first one). Now
 click somehere inside the map. The tile you selected should appear. If
 you placed the tile near the ground, try jumping on it.
 
