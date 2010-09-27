@@ -63,17 +63,18 @@ def load_tiles(tiles_path):
     tiles = []
     for y in range(tile_image.get_rect()[3] // tile_height):
         tiles.append(tile_image.subsurface(0, y * tile_height, tile_width, tile_height))
+        tiles[-1].set_colorkey((255, 0, 255))
 
     return tiles
 
 def play(level, window, tiles, editing=False):
 
-    layernames, tilemap = level
+    layernames, tilemap, spikytiles = level
     level_width = len(tilemap[0]) * tile_width
 
     layers = load_layers(layernames)
 
-    current_tile = 0
+    current_tiles = [1, 0]
     g = .3
 
     camera = Camera()
@@ -96,30 +97,47 @@ def play(level, window, tiles, editing=False):
 
                 for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
                     if y in range(len(tilemap)) and tilemap[y][x]:
-                        if player.airborne and player.jumptime > 0:
+                        if tilemap[y][x] in spikytiles:
+                            player.life -= 1
                             player.y -= 1
                             player.vy = -player.agility
                             player.airborne = True
+
                         else:
-                            player.y = tile_height * y - player.h - g
-                            player.vy = 0
-                            player.airborne = False
+                            if player.airborne and player.jumptime > 0:
+                                player.y -= 1
+                                player.vy = -player.agility
+                                player.airborne = True
+                            else:
+                                player.y = tile_height * y - player.h - g
+                                player.vy = 0
+                                player.airborne = False
+
+                        break
 
             elif player.vy < 0:
                 y = int(player.y // tile_height)
 
                 for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
                     if y in range(len(tilemap)) and tilemap[y][x]:
-                        # If falling, stop the player from falling through.
+                        if tilemap[y][x] in spikytiles:
+                            player.life -= 1
+
                         player.y = y * tile_height + player.h - g
                         player.vy = 0
+                        break
 
             if player.vx > 0:
                 x = (player.x + player.w) // tile_width
 
                 for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
                     if y in range(len(tilemap)) and tilemap[y][x]:
-                        player.x -= player.vx
+                        if tilemap[y][x] in spikytiles:
+                            player.life -= 1
+                            player.x -= tile_height // 2
+                        else:
+                            player.x -= player.vx
+
                         break
 
             elif player.vx < 0:
@@ -127,7 +145,12 @@ def play(level, window, tiles, editing=False):
 
                 for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
                     if y in range(len(tilemap)) and tilemap[y][x]:
-                        player.x -= player.vx
+                        if tilemap[y][x] in spikytiles:
+                            player.life -= 1
+                            player.x += tile_height // 2
+                        else:
+                            player.x -= player.vx
+
                         break
 
             # Move the player.
@@ -140,8 +163,7 @@ def play(level, window, tiles, editing=False):
             player.x += player.vx
             player.y += player.vy
 
-            # Stop game if player falls out of the screen.
-            if player.y > screen_height:
+            if player.y > screen_height or player.life < 1:
                 break
 
             # Position camera.
@@ -174,11 +196,15 @@ def play(level, window, tiles, editing=False):
             screen.blit(player.image, (player.x - camera.x, player.y, player.w, player.h))
 
             for i in range(player.life):
-                screen.blit(player.heart, (12 * i, 0, 16, 16))
+                screen.blit(player.heart, ((tile_width * 3 / 4) * i, 0, tile_width, tile_height))
 
             # Draw editor widgets.
             if editing:
-                x, y = 0, 0
+                pygame.draw.rect(window, (63, 63, 63), (0, 0, editor_width, window_height))
+                window.blit(tiles[current_tiles[0]], ((editor_width - tile_width) // 4, tile_height / 2))
+                window.blit(tiles[current_tiles[1]], ((editor_width - tile_width) // 4 * 3, tile_height / 2))
+
+                x, y = 0, 2 * tile_height
                 for tile in tiles:
                     window.blit(tile, (x, y))
                     if x + 2 * tile_width > editor_width:
@@ -237,15 +263,18 @@ def play(level, window, tiles, editing=False):
                 x = (event.pos[0] - editor_width + camera.x) // tile_width
                 y = event.pos[1] // tile_height
                 if event.button == 1:
-                    tilemap[y][x] = current_tile
+                    tilemap[y][x] = current_tiles[0]
                 elif event.button == 3:
-                    tilemap[y][x] = 0
+                    tilemap[y][x] = current_tiles[1]
 
             else:
-                x, y = 0, 0
+                x, y = 0, 2 * tile_height
                 for i in range(len(tiles)):
                     if event.pos[0] in range(x, x + tile_width) and event.pos[1] in range(y, y + tile_height):
-                        current_tile = i
+                        if event.button == 1:
+                            current_tiles[0] = i
+                        elif event.button == 3:
+                            current_tiles[1] = i
                         break
 
                     if x + 2 * tile_width > editor_width:
@@ -259,9 +288,9 @@ def play(level, window, tiles, editing=False):
                 x = (event.pos[0] - editor_width + camera.x) // tile_width
                 y = event.pos[1] // tile_height
                 if event.buttons[0]:
-                    tilemap[y][x] = current_tile
+                    tilemap[y][x] = current_tiles[0]
                 elif event.buttons[2]:
-                    tilemap[y][x] = 0
+                    tilemap[y][x] = current_tiles[1]
 
     return level
 
@@ -289,9 +318,11 @@ def main():
         tilemap = []
         for i in range(14):
             tilemap.append([0 for i in range(3 * window_width // tile_width)])
-        tilemap.append([1 for i in range(3 * window_width // tile_width)])
+        tilemap.append([2 for i in range(3 * window_width // tile_width)])
 
-        level = layernames, tilemap
+        spikytiles = [4, 5]
+
+        level = layernames, tilemap, spikytiles
 
     # Short buffer for low latency.
     pygame.mixer.pre_init(buffer=512)
