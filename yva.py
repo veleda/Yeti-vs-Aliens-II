@@ -14,16 +14,21 @@ class Camera:
     x = 0
 
 class Player:
-    agility = 12
-    can_jump = True
+    agility = 9
+    airborne = True
+    jumptime = -1
+    maxjumptime = 8
     speed = 4
-    score = 0
+
     x = 40
     y = 400
+
     vx = 0
     vy = 0
+
     w = 32
     h = 43
+
     rimage = pygame.image.load("gfx/sprites/yeti.png")
     limage = pygame.transform.flip(rimage, True, False)
     image = rimage
@@ -36,7 +41,7 @@ def main():
     editing = "-e" in sys.argv
 
     # Gravity.
-    g = .8
+    g = .5
 
     # Screen size.
     screen_width = 640
@@ -147,11 +152,14 @@ def main():
 
                 for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
                     if y in range(len(tilemap)) and tilemap[y][x]:
-                        player.can_jump = True
-
-                        # If falling, stop the player from falling through.
-                        player.y = tile_height * y - player.h - g
-                        player.vy = 0
+                        if player.airborne and player.jumptime > 0:
+                            player.y -= 1
+                            player.vy = -player.agility
+                            player.airborne = True
+                        else:
+                            player.y = tile_height * y - player.h - g
+                            player.vy = 0
+                            player.airborne = False
 
                     #draw_tile(fgcolor, x, y)
             elif player.vy < 0:
@@ -188,6 +196,9 @@ def main():
                     #draw_tile(hgcolor, x, y)
 
             # Move the player.
+            if player.jumptime > -1:
+                player.jumptime -= 1
+
             if player.vx < tile_height // 2:
                 player.vy += g
 
@@ -221,6 +232,11 @@ def main():
 
             # Draw player.
             #pygame.draw.rect(screen, mgcolor, (player.x, player.y, player.w, player.h))
+            if player.vx < 0:
+                player.image = player.limage
+            elif player.vx > 0:
+                player.image = player.rimage
+
             screen.blit(player.image, (player.x - camera.x, player.y, player.w, player.h))
 
             # Draw editor widgets.
@@ -241,18 +257,18 @@ def main():
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 player.vx -= player.speed
-                player.image = player.limage
 
             elif event.key == pygame.K_RIGHT:
                 player.vx += player.speed
-                player.image = player.rimage
 
             elif event.key == pygame.K_UP:
-                if player.can_jump:
+                if player.airborne:
+                    if player.jumptime < 0:
+                        player.jumptime = player.maxjumptime
+                else:
                     player.y -= 1
                     player.vy = -player.agility
-
-                player.can_jump = False
+                    player.airborne = True
 
             elif event.key == 27:
                 break
@@ -277,8 +293,9 @@ def main():
                 player.vx -= player.speed
 
             elif event.key == pygame.K_UP:
+                player.jumptime = -1
                 if player.vy < 0:
-                    player.vy += player.agility
+                    player.vy += player.agility / 2
 
         # If a mouse button is clicked...
         elif editing and event.type == pygame.MOUSEBUTTONDOWN:
