@@ -6,10 +6,6 @@ import sys
 
 import pygame
 
-# Profiling.
-#import cProfile
-#import pstats
-
 framerate = 60
 
 tile_width = 32
@@ -305,6 +301,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #cProfile.run("main()", "mainprof")
-    #p = pstats.Stats("mainprof")
-    #p.sort_stats('time').print_stats(10)
