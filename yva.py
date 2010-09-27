@@ -11,7 +11,6 @@ class Camera:
 
 class Baddie:
     dead = False
-    speed = 2
 
     vy = 0
 
@@ -21,6 +20,9 @@ class Baddie:
     def __init__(self, kind, x, y, right):
         self.kind, self.x, self.y, self.right = kind, x, y, right
 
+        self.speed = kind.speed
+        self.w = kind.w
+        self.h = kind.h
         self.rimage = kind.image
         self.limage = pygame.transform.flip(kind.image, True, False)
 
@@ -83,7 +85,8 @@ window_height = 480
 editor_width = 4 * tile_width
 
 kinds = [Kind(2, 32, 32, "skier.png"),
-         Kind(1, 32, 32, "blob.png")]
+         Kind(1, 32, 32, "blob.png"),
+         Kind(4, 64, 64, "alien.png")]
 
 
 def load_layers(layernames):
@@ -236,6 +239,9 @@ def play(level, window, tiles, editing=False):
             player.x += player.vx
             player.y += player.vy
 
+            if editing:
+                player.life = 9
+
             if player.life < 1:
                 player.dead = True
 
@@ -335,7 +341,12 @@ def play(level, window, tiles, editing=False):
                 y += 2 * tile_height
                 for kind in kinds:
                     window.blit(kind.image, (x, y))
-                    x += 2 * tile_height
+
+                    if x + 3 * tile_width > editor_width:
+                        x = 0
+                        y += 2 * tile_height
+                    else:
+                        x += 2 * tile_width
 
             pygame.display.update()
 
@@ -441,10 +452,14 @@ def play(level, window, tiles, editing=False):
                 x = 0
                 y += 4 * tile_height
                 for i in range(len(kinds)):
-                    if event.pos[0] in range(x, x + tile_width) and event.pos[1] in range(y, y + tile_height):
+                    if event.pos[0] in range(x, x + 2 * tile_width) and event.pos[1] in range(y, y +  2 * tile_height):
                         current_kind = i
 
-                    x += 2 * tile_height
+                    if x + 3 * tile_width > editor_width:
+                        x = 0
+                        y += 2 * tile_height
+                    else:
+                        x += 2 * tile_width
 
         elif editing and event.type == pygame.MOUSEBUTTONUP:
             current_baddie = None
