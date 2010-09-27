@@ -19,7 +19,7 @@ class Camera:
     x = 0
 
 class Player:
-    agility = 9
+    agility = 7
     airborne = True
     jumptime = -1
     maxjumptime = 8
@@ -60,7 +60,7 @@ def play(level, window, tiles, editing=False):
             layers.append(None)
 
     current_tile = 0
-    g = .5
+    g = .3
 
     camera = Camera()
     player = Player()
@@ -77,10 +77,6 @@ def play(level, window, tiles, editing=False):
         event = pygame.event.wait()
 
         if event.type == pygame.VIDEOEXPOSE:
-            # Check if the player is falling onto a platform.
-            # x and y are measured in tiles.
-
-            # Check if the tiles covered by the player are filled in.
             if player.vy > 0:
                 y = int((player.y + player.h + player.vy) // tile_height)
 
@@ -96,7 +92,6 @@ def play(level, window, tiles, editing=False):
                             player.airborne = False
 
             elif player.vy < 0:
-                # Find the height of the tiles over the player's head.
                 y = int(player.y // tile_height)
 
                 for x in range(player.x // tile_width, (player.x + player.w - 1) // tile_width + 1):
@@ -105,7 +100,6 @@ def play(level, window, tiles, editing=False):
                         player.y = y * tile_height + player.h - g
                         player.vy = 0
 
-            # Stop player if trying to walk into a wall.
             if player.vx > 0:
                 x = (player.x + player.w) // tile_width
 
