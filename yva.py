@@ -38,9 +38,6 @@ class Player:
     limage = pygame.transform.flip(rimage, True, False)
     image = rimage
 
-draw_tile = lambda color, x, y: pygame.draw.rect(screen, color,
-        (x * tile_width, y * tile_height, tile_width, tile_height))
-
 def load_tiles(filename):
     tile_image = pygame.image.load(filename)
 
