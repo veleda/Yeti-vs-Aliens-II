@@ -6,6 +6,16 @@ import sys
 
 import pygame
 
+class Decal:
+    def __init__(self, x, y, image, frames):
+        self.x = x
+        self.y = y
+        self.image = image
+        self.frames = frames
+
+        self.increment = image.get_rect()[2] // frames
+        self.frame = 0
+
 class Camera:
     x = 0
 
