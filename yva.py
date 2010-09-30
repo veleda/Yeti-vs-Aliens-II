@@ -39,7 +39,7 @@ class Baddie:
 class Kind:
     def __init__(self, speed, w, h, spritename):
         self.speed, self.w, self.h, self.spritename = speed, w, h, spritename
-        imagepath = os.path.join("gfx", "sprites", spritename)
+        imagepath = os.path.join("gfx", "characters", spritename)
         self.image = pygame.image.load(imagepath)
         self.image.set_colorkey((255, 0, 255))
 
@@ -55,7 +55,7 @@ class Player:
     speed = 4
 
     life = 5
-    heart = pygame.image.load("gfx/sprites/heart.png")
+    heart = pygame.image.load("gfx/characters/heart.png")
     heart.set_colorkey((255, 0, 255))
 
     x = 40
@@ -67,7 +67,7 @@ class Player:
     w = 32
     h = 43
 
-    rimage = pygame.image.load("gfx/sprites/yeti.png")
+    rimage = pygame.image.load("gfx/characters/yeti.png")
     limage = pygame.transform.flip(rimage, True, False)
     image = rimage
 
