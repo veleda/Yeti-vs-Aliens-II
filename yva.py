@@ -508,7 +508,9 @@ def main():
 
         spikytiles = [4, 5]
 
-        level = layernames, tilemap, spikytiles
+        baddies = []
+
+        level = layernames, tilemap, spikytiles, baddies
 
     # Short buffer for low latency.
     pygame.mixer.pre_init(buffer=512)
