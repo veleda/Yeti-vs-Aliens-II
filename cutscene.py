@@ -4,8 +4,7 @@
 import pygame
 
 def cutscene(window, bgfile, fgfile, musicfile, textfile, textcolor=(255, 255, 255), volume=.25):
-    scroll_speed = .3
-    scroll_speed = 3
+    scroll_speed = .7
     scroll = 0
 
     font_name = "fonts/alien.ttf"
