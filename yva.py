@@ -21,6 +21,7 @@ class Decal:
 
 class Camera:
     x = 0
+    y = 0
 
 class Baddie:
     dead = False
@@ -72,9 +73,6 @@ class Player:
     heart = pygame.image.load("gfx/items/heart.png")
     heart.set_colorkey((255, 0, 255))
 
-    x = 40
-    y = 400
-
     vx = 0
     vy = 0
 
@@ -85,6 +83,8 @@ class Player:
     limage = pygame.transform.flip(rimage, True, False)
     image = rimage
 
+    def __init__(self, x, y):
+        self.x, self.y = x, y
 
 rpunch = [pygame.image.load("gfx/decals/punch.png")]
 lpunch = [pygame.transform.flip(rpunch[0], True, False)]
@@ -133,6 +133,7 @@ def load_tiles(tiles_path):
 def play(level, window, tiles, editing=False):
     layernames, tilemap, spikytiles, baddies = level
     level_width = len(tilemap[0]) * tile_width
+    level_height = len(tilemap) * tile_height
 
     layers = load_layers(layernames)
 
@@ -142,7 +143,7 @@ def play(level, window, tiles, editing=False):
     g = .6
 
     camera = Camera()
-    player = Player()
+    player = Player(4 * tile_width, 4 * tile_height)
 
     screen_height = window_height
     if editing:
@@ -264,7 +265,7 @@ def play(level, window, tiles, editing=False):
             if player.life < 1:
                 player.dead = True
 
-            if player.y > screen_height:
+            if player.y > level_height:
                 break
 
             if not editing:
@@ -311,6 +312,13 @@ def play(level, window, tiles, editing=False):
             else:
                 camera.x = player.x - screen_width // 2
 
+            if player.y < screen_height // 2:
+                camera.y = 0
+            elif player.y > level_height - screen_height // 2:
+                camera.y = level_height - screen_height
+            else:
+                camera.y = player.y - screen_height // 2
+
             # Draw layers.
             for i in range(len(layers) - 1, -1, -1):
                 if layers[i]:
@@ -321,10 +329,10 @@ def play(level, window, tiles, editing=False):
             for y in range(len(tilemap)):
                 for x in range(len(tilemap[y])):
                     if tilemap[y][x]:
-                        screen.blit(tiles[tilemap[y][x]], (x * tile_width - camera.x, y * tile_height))
+                        screen.blit(tiles[tilemap[y][x]], (x * tile_width - camera.x, y * tile_height - camera.y))
 
             for baddie in baddies:
-                screen.blit(baddie.image, (baddie.x - camera.x, baddie.y, baddie.w, baddie.h))
+                screen.blit(baddie.image, (baddie.x - camera.x, baddie.y - camera.y, baddie.w, baddie.h))
 
             if player.vx < 0:
                 player.right = False
@@ -333,13 +341,13 @@ def play(level, window, tiles, editing=False):
                 player.right = True
                 player.image = player.rimage
 
-            screen.blit(player.image, (player.x - camera.x, player.y, player.w, player.h))
+            screen.blit(player.image, (player.x - camera.x, player.y - camera.y, player.w, player.h))
 
             for i in range(player.life):
                 screen.blit(player.heart, ((tile_width * 3 / 4) * i, 0, tile_width, tile_height))
 
             for decal in decals:
-                screen.blit(decal.sprite[decal.cstage//decal.stagetime], (decal.x-camera.x, decal.y))
+                screen.blit(decal.sprite[decal.cstage//decal.stagetime], (decal.x-camera.x, decal.y - camera.y))
 
             for decal in decals:
                 decal.nstage()
@@ -399,7 +407,7 @@ def play(level, window, tiles, editing=False):
                 x, y = pygame.mouse.get_pos()
 
                 if x > editor_width:
-                    baddies.append(Baddie(kinds[current_kind], (x + camera.x - editor_width) // tile_width * tile_width, y // tile_height * tile_height, True))
+                    baddies.append(Baddie(kinds[current_kind], (x + camera.x - editor_width) // tile_width * tile_width, (y + camera.y) // tile_height * tile_height, True))
 
             elif event.key == pygame.K_LCTRL:
                 if player.right:
@@ -408,6 +416,7 @@ def play(level, window, tiles, editing=False):
                 else:
                     decals.append(Decal(10, player.x-48, player.y, lpunch))
                     offset = -48-player.w
+
                 for x in (player.x + player.w - 1+offset) // tile_width - 1, (player.x + player.w+offset) // tile_width:
                     for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
                         for baddie in baddies:
@@ -419,15 +428,31 @@ def play(level, window, tiles, editing=False):
                 break
 
             if editing:
-                if event.key in (pygame.K_PLUS, pygame.K_KP_PLUS):
+                if event.key == pygame.K_END:
                     for row in tilemap:
                         row.append(0)
-                        level_width = len(tilemap[0]) * tile_width
 
-                elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+                    level_width = len(tilemap[0]) * tile_width
+
+                elif event.key == pygame.K_HOME:
                     for row in tilemap:
                         row.pop()
-                        level_width = len(tilemap[0]) * tile_width
+
+                    level_width = len(tilemap[0]) * tile_width
+
+                elif event.key == pygame.K_PAGEUP:
+                    tilemap.insert(0, [0 for i in range(len(tilemap[0]))])
+                    level_height = len(tilemap) * tile_width
+                    player.y += tile_height
+                    for baddie in baddies:
+                        baddie.y += tile_height
+
+                elif event.key == pygame.K_PAGEDOWN:
+                    tilemap.pop(0)
+                    level_height = len(tilemap) * tile_width
+                    player.y -= tile_height
+                    for baddie in baddies:
+                        baddie.y -= tile_height
 
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
@@ -443,8 +468,8 @@ def play(level, window, tiles, editing=False):
 
         elif editing and event.type == pygame.MOUSEBUTTONDOWN:
             if event.pos[0] > editor_width:
-                x = (event.pos[0] - editor_width + camera.x) // tile_width
-                y = event.pos[1] // tile_height
+                x = int(event.pos[0] - editor_width + camera.x) // tile_width
+                y = int(event.pos[1] + camera.y) // tile_height
 
                 if event.button == 1:
                     for baddie in baddies:
@@ -509,8 +534,8 @@ def play(level, window, tiles, editing=False):
 
         elif editing and event.type == pygame.MOUSEMOTION:
             if event.pos[0] > editor_width:
-                x = (event.pos[0] - editor_width + camera.x) // tile_width
-                y = event.pos[1] // tile_height
+                x = int(event.pos[0] - editor_width + camera.x) // tile_width
+                y = int(event.pos[1] + camera.y) // tile_height
                 if event.buttons[0]:
                     if current_baddie:
                         current_baddie.x = x * tile_width
