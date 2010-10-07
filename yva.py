@@ -7,14 +7,17 @@ import sys
 import pygame
 
 class Decal:
-    def __init__(self, x, y, image, frames):
+    def __init__(self, stagetime, x, y, sprites):
+        self.alpha = 255
         self.x = x
         self.y = y
-        self.image = image
-        self.frames = frames
+        self.stagetime = stagetime
+        self.cstage = 0
+        self.maxstage = len(sprites)*stagetime-1
+        self.sprite = sprites
 
-        self.increment = image.get_rect()[2] // frames
-        self.frame = 0
+    def nstage(self):
+        self.cstage += 1
 
 class Camera:
     x = 0
@@ -63,6 +66,7 @@ class Player:
     jumptime = -1
     maxjumptime = 8
     speed = 4
+    right = True
 
     life = 5
     heart = pygame.image.load("gfx/items/heart.png")
@@ -81,6 +85,11 @@ class Player:
     limage = pygame.transform.flip(rimage, True, False)
     image = rimage
 
+
+rpunch = [pygame.image.load("gfx/decals/punch.png")]
+lpunch = [pygame.transform.flip(rpunch[0], True, False)]
+
+decals = []
 
 layers_dir = ["gfx", "layers"]
 tiles_path = os.path.join("gfx", "tiles.png")
@@ -318,14 +327,24 @@ def play(level, window, tiles, editing=False):
                 screen.blit(baddie.image, (baddie.x - camera.x, baddie.y, baddie.w, baddie.h))
 
             if player.vx < 0:
+                player.right = False
                 player.image = player.limage
             elif player.vx > 0:
+                player.right = True
                 player.image = player.rimage
 
             screen.blit(player.image, (player.x - camera.x, player.y, player.w, player.h))
 
             for i in range(player.life):
                 screen.blit(player.heart, ((tile_width * 3 / 4) * i, 0, tile_width, tile_height))
+
+            for decal in decals:
+                screen.blit(decal.sprite[decal.cstage//decal.stagetime], (decal.x-camera.x, decal.y))
+
+            for decal in decals:
+                decal.nstage()
+                if (decal.cstage > decal.maxstage):
+                    decals.remove(decal)
 
             # Draw editor widgets.
             if editing:
@@ -381,6 +400,20 @@ def play(level, window, tiles, editing=False):
 
                 if x > editor_width:
                     baddies.append(Baddie(kinds[current_kind], (x + camera.x - editor_width) // tile_width * tile_width, y // tile_height * tile_height, True))
+
+            elif event.key == pygame.K_LCTRL:
+                if player.right:
+                    offset = 48
+                    decals.append(Decal(10, player.x+48, player.y, rpunch))
+                else:
+                    decals.append(Decal(10, player.x-48, player.y, lpunch))
+                    offset = -48-player.w
+                for x in (player.x + player.w - 1+offset) // tile_width - 1, (player.x + player.w+offset) // tile_width:
+                    for y in range(int(player.y // tile_height), int((player.y + player.h) // tile_height + 1)):
+                        for baddie in baddies:
+                            if baddie.y // tile_height == y and x in range(baddie.x // tile_width,
+                                    (baddie.x + baddie.w) // tile_width) and not baddie.dead:
+                                baddie.dead = True
 
             elif event.key == 27:
                 break
