@@ -65,7 +65,7 @@ class Player:
     speed = 4
 
     life = 5
-    heart = pygame.image.load("gfx/characters/heart.png")
+    heart = pygame.image.load("gfx/items/heart.png")
     heart.set_colorkey((255, 0, 255))
 
     x = 40
@@ -523,7 +523,10 @@ def main():
         level = layernames, tilemap, spikytiles, baddies
 
     # Short buffer for low latency.
-    pygame.mixer.pre_init(buffer=512)
+    try:
+        pygame.mixer.pre_init(buffer=512)
+    except:
+        pass
 
     pygame.init()
     pygame.time.set_timer(pygame.VIDEOEXPOSE, 1000 / framerate)
